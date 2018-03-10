@@ -6,7 +6,7 @@
 #include <libserialport.h>
 #include <rrd.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 struct Data {
     unsigned int temp;
@@ -28,11 +28,7 @@ struct Data {
 void debug_msg(const char *state, enum sp_return return_code)
 {
     if (DEBUG) {
-        if (return_code >= 0) {
-            printf("Success: %s\n", state);
-        } else {
-            printf("ERROR: %s, error code: %d!\n", state, return_code);
-        }
+        printf("DEBUG: %s: %d\n", state, return_code);
     }
 }
 
@@ -141,7 +137,7 @@ int init(struct sp_port **port, char *buffer, char *raw)
     return SP_OK;
 }
 
-int data(struct sp_port *port, char *buffer, char *raw)
+int data(struct sp_port *port, char *buffer, char *raw, char **params)
 {
     const char *data_string = "aaaa010000010102000159";
     enum sp_return return_code;
@@ -151,10 +147,10 @@ int data(struct sp_port *port, char *buffer, char *raw)
 
     return_code = sp_blocking_write(port, raw, 11, 1000);
 
-    sleep(2);
+    sleep(5);
 
-    if (sp_input_waiting(port) != 65) {
-        printf("NOT 65 DATA WAITING!\n");
+    if (sp_input_waiting(port) < 65) {
+        printf("Less than 65 chars! %d waiting...\n", sp_input_waiting(port));
         return -1;
     }
 
@@ -163,6 +159,8 @@ int data(struct sp_port *port, char *buffer, char *raw)
     format_data(buffer, &data);
 
     if (DEBUG) {
+        printf("Read: %d\n\n", return_code);
+
         printf("Temp:\t\t%.1f degrees C\n", (float)data.temp / 10);
         printf("U Panel:\t%.1f V\n", (float)data.u_panel1 / 10);
         printf("I Panel:\t%.1f A\n", (float)data.i_panel1 / 10);
@@ -177,7 +175,31 @@ int data(struct sp_port *port, char *buffer, char *raw)
                (float)(((float)data.e_total / (float)data.t_total) / 10));
         printf("\n");
     } else {
-        printf("RRD SAVE\n");
+        printf("before sprintf...\n");
+        sprintf(params[2], "N:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d",
+                data.temp,
+                data.u_panel1,
+                data.i_panel1,
+                data.u_panel2,
+                data.i_panel2,
+                data.u_panel3,
+                data.i_panel3,
+                data.e_today,
+                data.u_grid,
+                data.i_grid,
+                data.freq,
+                data.e_now,
+                data.e_total,
+                data.t_total
+               );
+
+        printf("Will be written to rrd\n");
+
+        printf("[0]: %s\n", params[0]);
+        printf("[1]: %s\n", params[1]);
+        printf("[2]: %s\n", params[2]);
+        rrd_update(3, params);
+        printf("after rrd_update...\n");
     }
 
     return SP_OK;
@@ -185,6 +207,8 @@ int data(struct sp_port *port, char *buffer, char *raw)
 
 int main(int argc, char *argv[])
 {
+    int i;
+    char *params[4];
     enum sp_return return_code;
 
     struct sp_port *port;
@@ -192,12 +216,22 @@ int main(int argc, char *argv[])
     char *buffer = (char *)calloc(255, sizeof(char));
     char *raw = (char *)calloc(255, sizeof(char));
 
+    for (i = 0; i < 4; i++) {
+        params[i] = (char *)malloc(1024);
+    }
+
+    strcpy(params[0], "rrdupdate");
+    strcpy(params[1], "/var/local/pvl.rrd");
+    params[3] = NULL;
+
     while (1) {
         return_code = init(&port, buffer, raw);
 
         if (return_code == SP_OK) {
             do {
-                return_code = data(port, buffer, raw);
+        printf("before data...\n");
+                return_code = data(port, buffer, raw, params);
+        printf("after after...\n");
             } while (return_code != -1);
         } else {
             sleep(60);

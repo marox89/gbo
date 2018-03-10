@@ -1,2 +1,2 @@
-pvi: pvi.c
-	gcc -o pvi -lrt -lserialport pvi.c
+pvl: pvl.c
+	gcc -o pvl -lrrd -lserialport pvl.c
