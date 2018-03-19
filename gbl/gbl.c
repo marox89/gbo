@@ -2,11 +2,10 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#include <signal.h>
-#include <time.h>
-
 #include <modbus.h>
 #include <rrd.h>
+
+#define DEBUG 0
 
 #define DS_NUM 6
 #define ADDR 8
@@ -30,11 +29,10 @@ int i;
 int c[C_NUM];
 float percentage;
 
-static void
-handler(int sig, siginfo_t *si, void *uc)
+void gbl_data()
 {
     //char rrd_update_cmd[MAX_CMD_SIZE];
-	
+
     modbus_read_input_registers(ctx, ADDR, DS_NUM, ans);
     modbus_read_registers(ctx, 10, 1, &rele);
 
@@ -53,38 +51,18 @@ handler(int sig, siginfo_t *si, void *uc)
     percentage = MODBUS_GET_LOW_BYTE(ans[5]);
     percentage = (percentage / 255) * 100;
 
-    //printf("I1: %ddA\tI2: %ddA\tI3: %ddA\tI: %ddA\t U: %dV\tPI: %.2f\%\n",
-    //       c[0], c[1], c[2], c[3], ans[4], percentage);
-    //
-    printf("Rele: %d\n", rele);
-
-    /* Setup params for rrd_update */
-    /*
-    sprintf(rrd_update_cmd,
-            "rrdtool update "RRD_FILE" N:%d:%d:%d:%d:%d:%d:%d",
-            c[0], c[1], c[2], c[3], ans[4], ans[5], rele);
-
-    system(rrd_update_cmd);
-    */
-
     sprintf(params[2], "N:%d:%d:%d:%d:%d:%.2f:%d",
             c[0], c[1], c[2], c[3], ans[4], percentage, rele);
 
     rrd_update(PARAMS_NUM, params);
-    //printf("%s\n", params[2]);
+    if (DEBUG) {
+    printf("%s\n", params[2]);
+    }
 }
 
 int
 main(int argc, char *argv[])
 {
-    timer_t timerid;
-    time_t interval;
-    struct sigevent sev;
-    struct itimerspec its;
-    long long freq_nanosecs;
-    sigset_t mask;
-    struct sigaction sa;
-
     int i;
 
     /* Check for arguments */
@@ -108,8 +86,8 @@ main(int argc, char *argv[])
     /* Init modbus */
 
     ctx = modbus_new_rtu("/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AJ03KXCR-if00-port0",
-                        9600, 'N', 8, 2);
-    
+                         9600, 'N', 8, 2);
+
     if (ctx == NULL) {
         errExit("modbus_new_rtu");
     }
@@ -126,34 +104,9 @@ main(int argc, char *argv[])
 
     /* Establish handler for timer signal */
 
-    sa.sa_flags = SA_SIGINFO;
-    sa.sa_sigaction = handler;
-    sigemptyset(&sa.sa_mask);
-    if (sigaction(SIG, &sa, NULL) == -1)
-        errExit("sigaction");
-
-    /* Create the timer */
-
-    sev.sigev_notify = SIGEV_SIGNAL;
-    sev.sigev_signo = SIG;
-    sev.sigev_value.sival_ptr = &timerid;
-    if (timer_create(CLOCKID, &sev, &timerid) == -1)
-        errExit("timer_create");
-
-    /* Start the timer */
-
-    interval = (time_t)atoi(argv[1]);
-    its.it_value.tv_sec = interval;
-    its.it_value.tv_nsec = 0;
-    its.it_interval.tv_sec = interval;
-    its.it_interval.tv_nsec = 0;
-    if (timer_settime(timerid, 0, &its, NULL) == -1)
-        errExit("timer_settime");
-
-    /* Infinte loop */
-
     while (1) {
-        sleep(3600);
+        gbl_data();
+        sleep(2);
     }
 
     exit(EXIT_SUCCESS);

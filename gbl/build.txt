@@ -1,1 +1,0 @@
-gcc -o gbo -I/usr/local/include/modbus -lmodbus -lrt -lrrd gbo.c
