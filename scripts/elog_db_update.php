@@ -19,7 +19,8 @@ $last_gbl = explode(" ", exec('rrdtool lastupdate /var/local/gbo.rrd | tail -n 1
 $power =  $last_gbl[4] * $last_gbl[5] / 10;
 $pi = $last_gbl[6] * 100;
 
-$sql = "UPDATE last_update SET pv = $last_pvl[12], gbo = $power, pi = $pi";
+$sql = "UPDATE last_update SET pv = $last_pvl[12], gbo = $power, pi = $pi, e_today = $last_pvl[8], k1 = $last_gbl[7]";
+
 $result = $conn->query($sql);
 
 $conn->close();

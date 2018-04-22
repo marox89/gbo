@@ -59,8 +59,8 @@ if [ "$interval" != "actual" ]; then
     --end now --start $START --width 256 --height 256 --only-graph \
     --lower-limit 0 -M \
     DEF:e=$PVL_FILE:e_now:AVERAGE \
-    AREA:e#1A1A59 \
-    LINE2:e#09093B:"PV" 
+    AREA:e#123652 \
+    LINE2:e#042037:"PV"
 fi
 
 # VYKON

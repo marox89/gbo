@@ -5,58 +5,36 @@ HEIGHT=1080
 FORMAT=PNG
 FILE_FORMAT=png
 OPTIONS="-D --font DEFAULT:16"
-GRAPH_DATE_INFO="Vygenerovany: dna $(date +%Y-%m-%d) o $(date +HH:MM)"
 RRD_FILE=/var/local/gbo.rrd
 PVL_FILE=/var/local/pvl.rrd
 IMG_PATH=/srv/http/graphs
-ZUNNA_MNT=/mnt/zunna/web/graphs
-ZUNNA_MNT_ACT=/mnt/zunna_actual/web/graphs
 
 interval=$1
 
-if [ "$interval" == "" ]; then
-    echo "specify interval: [actual|day|week|month|year]"
-    exit 1
+if [ "$interval" == 6 ]; then
+	interval_name="aktualne"
 
-elif [ "$interval" == "actual" ]; then
-	START="end-6hour"
-    GRAPH_TITLE="Aktualny"
+elif [ "$interval" == 24 ]; then
+	interval_name="denne"
 
-elif [ "$interval" == "day" ]; then
-	START="end-1day"
-    GRAPH_TITLE="Denny"
+elif [ "$interval" == 168 ]; then
+	interval_name="tyzdenne"
 
-elif [ "$interval" == "week" ]; then
-	START="end-1week"
-    GRAPH_TITLE="Tyzdenny"
-
-elif [ "$interval" == "month" ]; then
-	START="end-1month"
-    GRAPH_TITLE="Mesacny"
-
-elif [ "$interval" == "year" ]; then
-    START="end-1year"
-    GRAPH_TITLE="Rocny "
+elif [ "$interval" == 672 ]; then
+	interval_name="mesacne"
 fi
 
 date=$(date +%Y-%m-%d)
+#date=$(date -Iseconds)
 
-GBO_FILENAME="$IMG_PATH/gbo.$FILE_FORMAT"
-PV_FILENAME="$IMG_PATH/pv.$FILE_FORMAT"
-PI_FILENAME="$IMG_PATH/pi.$FILE_FORMAT"
-RELE_FILENAME="$IMG_PATH/rele.$FILE_FORMAT"
-E_TODAY_FILENAME="$IMG_PATH/e_today.$FILE_FORMAT"
-U_PANEL1_FILENAME="$IMG_PATH/u_panel1.$FILE_FORMAT"
-TEMP_FILENAME="$IMG_PATH/temp.$FILE_FORMAT"
-
-# START OF GENERATING #
+HOUR=h
+START=end-$interval$HOUR
 
 # VYKON
 
-rrdtool graph $GBO_FILENAME --imgformat $FORMAT \
+rrdtool graph $IMG_PATH/vykon_$interval.$FILE_FORMAT --imgformat $FORMAT \
 --end now --start $START --width $WIDTH --height $HEIGHT $OPTIONS \
---title "$GRAPH_TITLE graf GBO. $GRAPH_DATE_INFO" \
---vertical-label "kW" \
+--title "Vykon za poslednych $interval hodin. Vygenerovane: $(date)" --vertical-label "kW" \
 -A \
 DEF:i=$RRD_FILE:c0:AVERAGE \
 DEF:u=$RRD_FILE:u:AVERAGE \
@@ -86,10 +64,9 @@ GPRINT:total_out:"Celkova praca\:  %.2lf kWh\l"
 
 # PI
 
-rrdtool graph $PI_FILENAME --imgformat $FORMAT \
+rrdtool graph $IMG_PATH/pi_$interval.$FILE_FORMAT --imgformat $FORMAT \
 --end now --start $START --width $WIDTH --height $HEIGHT $OPTIONS \
---title "$GRAPH_TITLE graf PI. $GRAPH_DATE_INFO" \
---vertical-label "%" \
+--title "PI za poslednych $interval hodin. Vygenerovane: $(date)" --vertical-label "%" \
 --lower-limit 0 -M \
 DEF:pi=$RRD_FILE:pi:AVERAGE \
 VDEF:min=pi,MINIMUM \
@@ -107,9 +84,9 @@ GPRINT:avg:"Priemerna hodnota PI\: %.1lf%%"
 
 # RELE
 
-rrdtool graph $RELE_FILENAME --imgformat $FORMAT \
+rrdtool graph $IMG_PATH/rele_$interval.$FILE_FORMAT --imgformat $FORMAT \
 --end now --start $START --width $WIDTH --height $HEIGHT $OPTIONS \
---title "$GRAPH_TITLE graf rele. $GRAPH_DATE_INFO" \
+--title "Stav rele za poslednych $interval hodin. Vygenerovane: $(date)" \
 --lower-limit 0 -M \
 DEF:k=$RRD_FILE:k:AVERAGE \
 VDEF:last=k,LAST \
@@ -122,10 +99,9 @@ GPRINT:avg:"Priemerna hodnota Rele\: %.1lf"
 
 # PV
 
-rrdtool graph $PV_FILENAME --imgformat $FORMAT \
+rrdtool graph $IMG_PATH/pv_$interval.$FILE_FORMAT --imgformat $FORMAT \
 --end now --start $START --width $WIDTH --height $HEIGHT $OPTIONS \
---title "$GRAPH_TITLE graf PV. $GRAPH_DATE_INFO" \
---vertical-label "W" \
+--title "PV vykon za poslednych $interval hodin. Vygenerovane: $(date)" --vertical-label "W" \
 --lower-limit 0 -M \
 DEF:e=$PVL_FILE:e_now:AVERAGE \
 VDEF:max_e=e,MAXIMUM \
@@ -141,10 +117,9 @@ GPRINT:total:"Celkova praca\:  %.2lf Wh"
 
 # TEMP
 
-rrdtool graph $TEMP_FILENAME --imgformat $FORMAT \
+rrdtool graph $IMG_PATH/temp_$interval.$FILE_FORMAT --imgformat $FORMAT \
 --end now --start $START --width $WIDTH --height $HEIGHT $OPTIONS \
---title "$GRAPH_TITLE graf teploty. $GRAPH_DATE_INFO" \
---vertical-label "degrees C" \
+--title "Teplota za poslednych $interval hodin. Vygenerovane: $(date)" \
 --lower-limit 0 -M \
 DEF:t_raw=$PVL_FILE:temp:AVERAGE \
 CDEF:t=t_raw,10,/ \
@@ -158,10 +133,9 @@ GPRINT:t_last:"Posledna hodnota \: %.2lf C"
 
 # E_TODAY
 
-rrdtool graph $E_TODAY_FILENAME --imgformat $FORMAT \
+rrdtool graph $IMG_PATH/e_today_$interval.$FILE_FORMAT --imgformat $FORMAT \
 --end now --start $START --width $WIDTH --height $HEIGHT $OPTIONS \
---title "$GRAPH_TITLE graf vyprodukovanej prace. $GRAPH_DATE_INFO" \
---vertical-label "kWh" \
+--title "Denny akumulovany vykon za poslednych $interval hodin. Vygenerovane: $(date)" --vertical-label "kWh" \
 --lower-limit 0 -M \
 DEF:x_raw=$PVL_FILE:e_today:AVERAGE \
 CDEF:x=x_raw,10,* \
@@ -175,10 +149,9 @@ GPRINT:x_last:"Posledna hodnota e_today\: %.2lf Wh"
 
 # UPANEL1
 
-rrdtool graph $U_PANEL1_FILENAME --imgformat $FORMAT \
+rrdtool graph $IMG_PATH/u_panel1_$interval.$FILE_FORMAT --imgformat $FORMAT \
 --end now --start $START --width $WIDTH --height $HEIGHT $OPTIONS \
---title "$GRAPH_TITLE graf napetia. $GRAPH_DATE_INFO" \
---vertical-label "V" \
+--title "Napetie na panely 1 za poslednych $interval hodin. Vygenerovane: $(date)" --vertical-label "V" \
 --lower-limit 0 -M \
 DEF:x_raw=$PVL_FILE:u_panel1:AVERAGE \
 CDEF:x=x_raw,10,/ \
@@ -189,73 +162,41 @@ LINE2:x#00FF00:"u_panel1" \
 LINE:x_max#00FF00 \
 GPRINT:x_max:"Max hodnota u\: %.2lf V\t" \
 GPRINT:x_last:"Posledna hodnota u\: %.2lf V"
-
-# END OF GENERATING #
-
 # UPLOADING
 
+echo "START: uploading $interval_name graphs to zunna..."
+
+echo "KdppcdS16453" | sshfs mrx.zunna.sk@zunna.sk:/ /mnt/zunna/ -o password_stdin
+
 cd $IMG_PATH
+cp ./pv_$interval.png /mnt/zunna/web/graphs
+cp ./vykon_$interval.png /mnt/zunna/web/graphs
+cp ./pi_$interval.png /mnt/zunna/web/graphs
+cp ./rele_$interval.png /mnt/zunna/web/graphs
+cp ./u_panel1_$interval.png /mnt/zunna/web/graphs
+cp ./temp_$interval.png /mnt/zunna/web/graphs
+cp ./e_today_$interval.png /mnt/zunna/web/graphs
 
-echo "START: uploading $interval graphs to zunna..."
+umount /mnt/zunna
 
-if [ "$interval" == "actual" ]; then
+echo "DONE: uploading $interval_name graphs to zunna..."
 
-    echo "KdppcdS16453" | sshfs mrx.zunna.sk@zunna.sk:/ /mnt/zunna_actual/ -o password_stdin
+if [ "$interval" != 6 ]; then
 
-    cp $GBO_FILENAME $ZUNNA_MNT_ACT/actual
-    cp $PV_FILENAME $ZUNNA_MNT_ACT/actual
-    cp $PI_FILENAME $ZUNNA_MNT_ACT/actual
-    cp $RELE_FILENAME $ZUNNA_MNT_ACT/actual
-    cp $U_PANEL1_FILENAME $ZUNNA_MNT_ACT/actual
-    cp $TEMP_FILENAME $ZUNNA_MNT_ACT/actual
-    cp $E_TODAY_FILENAME $ZUNNA_MNT_ACT/actual
+	echo "START: archiving $interval_name graphs..."
+	cp ./vykon_$interval.png ./Archiv/vykon_$interval_name/$date.png
+	cp ./pi_$interval.png ./Archiv/pi_$interval_name/$date.png
+	cp ./pv_$interval.png ./Archiv/pv_$interval_name/$date.png
+	cp ./rele_$interval.png ./Archiv/rele_$interval_name/$date.png
+	echo "DONE: archiving $interval_name graphs..."
 
-    cp $GBO_FILENAME ./actual
-    cp $PV_FILENAME ./actual
-    cp $PI_FILENAME ./actual
-    cp $RELE_FILENAME ./actual
-    cp $U_PANEL1_FILENAME ./actual
-    cp $TEMP_FILENAME ./actual
-    cp $E_TODAY_FILENAME ./actual
-
-    umount /mnt/zunna_actual
-
-
-else
-
-	echo "START: archiving $interval graphs..."
-
-    ARCH_DIR="./$interval/$date"
-
-    mkdir $ARCH_DIR
-
-    cp $GBO_FILENAME $ARCH_DIR
-    cp $PV_FILENAME $ARCH_DIR
-    cp $PI_FILENAME $ARCH_DIR
-    cp $RELE_FILENAME $ARCH_DIR
-    cp $U_PANEL1_FILENAME $ARCH_DIR
-    cp $TEMP_FILENAME $ARCH_DIR
-    cp $E_TODAY_FILENAME $ARCH_DIR
-
-	echo "DONE: archiving $interval graphs..."
-
-#	echo "START: pushing to drive $interval_name graphs..."
-#	drive push -quiet -destination GBO $IMG_PATH/Archiv/vykon_$interval_name/$date.png
-#	drive push -quiet -destination GBO $IMG_PATH/Archiv/pi_$interval_name/$date.png
-#	drive push -quiet -destination GBO $IMG_PATH/Archiv/rele_$interval_name/$date.png
-#	drive push -quiet -destination GBO $IMG_PATH/Archiv/pv_$interval_name/$date.png
-#	echo "done: pushing to drive $interval_name graphs..."
-
+	echo "START: pushing to drive $interval_name graphs..."
+	drive push -quiet -destination GBO $IMG_PATH/Archiv/vykon_$interval_name/$date.png
+	drive push -quiet -destination GBO $IMG_PATH/Archiv/pi_$interval_name/$date.png
+	drive push -quiet -destination GBO $IMG_PATH/Archiv/rele_$interval_name/$date.png
+	drive push -quiet -destination GBO $IMG_PATH/Archiv/pv_$interval_name/$date.png
+	echo "done: pushing to drive $interval_name graphs..."
 fi
 
-rm $GBO_FILENAME
-rm $PV_FILENAME
-rm $PI_FILENAME
-rm $RELE_FILENAME
-rm $U_PANEL1_FILENAME
-rm $TEMP_FILENAME
-rm $E_TODAY_FILENAME
-
-echo "DONE: uploading $interval graphs to zunna..."
-
 exit 0
+
