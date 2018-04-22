@@ -1,0 +1,8 @@
+[Unit]
+Description=Logging data from GreenBono to RRD database
+
+[Service]
+ExecStart=/usr/local/sbin/gbo 1
+
+[Install]
+WantedBy=multi-user.target

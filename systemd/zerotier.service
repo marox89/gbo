@@ -1,0 +1,10 @@
+[Unit]
+Description=ZeroTierOne VPN service.
+After=local-fs.target network.target
+
+[Service]
+ExecStart=/usr/sbin/zerotier-one -d
+Type=forking
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,8 @@
+[Unit]
+Description=Logging data from Eathon PV Inverter to RRD database
+
+[Service]
+ExecStart=/usr/local/sbin/pvl
+
+[Install]
+WantedBy=multi-user.target

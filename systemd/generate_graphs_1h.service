@@ -1,0 +1,6 @@
+[Unit]
+Description=Will generate graphs from RRD file
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/graphs_create.sh 1

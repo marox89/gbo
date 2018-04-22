@@ -97,8 +97,10 @@ int write_read(const char *msg, pvl_ctx *ctx, int count_out, int count_in)
     char *out_buffer = ctx->out_buffer;
     char *in_buffer = ctx->in_buffer;
 
+    sp_flush(port, SP_BUF_BOTH);
+
     hex_to_raw(msg, out_buffer);
-    rc = sp_blocking_write(port, out_buffer, count_out, 1000);
+    rc = sp_nonblocking_write(port, out_buffer, count_out);
     if (rc == count_out) {
         debug_msg("Successfully written.");
         debug_msg(msg);
@@ -107,7 +109,7 @@ int write_read(const char *msg, pvl_ctx *ctx, int count_out, int count_in)
         return EXIT_FAILURE;
     }
 
-    sleep(2);
+    sleep(5);
 
     if (sp_input_waiting(port) == count_in) {
         debug_msg("Correct number of chars in input buffer.");
@@ -118,8 +120,7 @@ int write_read(const char *msg, pvl_ctx *ctx, int count_out, int count_in)
         return EXIT_FAILURE;
     }
 
-    rc = sp_blocking_read_next(port, in_buffer, sp_input_waiting(port),
-                                        1000);
+    rc = sp_nonblocking_read(port, in_buffer, sp_input_waiting(port));
 
     if (count_in != 0) {
         if (rc == count_in) {
@@ -131,6 +132,8 @@ int write_read(const char *msg, pvl_ctx *ctx, int count_out, int count_in)
             return EXIT_FAILURE;
         }
     }
+
+    sp_flush(port, SP_BUF_BOTH);
 
     return SP_OK;
 }

@@ -1,7 +1,7 @@
 #ifndef PVL_H_
 #define PVL_H_
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define PORT_NAME "/dev/serial/by-id/usb-Prolific_Technology_Inc._USB-Serial_Controller_D-if00-port0"
 #define RRD_CMD "rrdupdate"

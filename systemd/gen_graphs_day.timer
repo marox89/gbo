@@ -1,0 +1,12 @@
+[Unit]
+Description=Runs gen_graphs_day every day.
+
+[Timer]
+# Time to wait after booting before we run first time
+#OnBootSec=16min
+# Time between running each consecutive time
+OnCalendar=*-*-* 00:00:00
+Unit=gen_graphs_day.service
+
+[Install]
+WantedBy=multi-user.target

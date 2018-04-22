@@ -1,5 +1,6 @@
 #!/bin/bash
 
+path=/var/local/pvl.rrd
 step=5
 hb=15
 let "tyzden = (60/step)*60*24*7"
@@ -10,17 +11,17 @@ echo "Tyzden: $tyzden"
 echo "Mesiac: $mesiac"
 echo "2 roky: $rok"
 
-rrdtool create /var/local/pvl.rrd --step $step \
+rrdtool create $path --step $step \
 DS:temp:GAUGE:$hb:-1000:1000 \
-DS:u_panel1:GAUGE:$hb:-1000:1000 \
-DS:i_panel1:GAUGE:$hb:-100:100 \
-DS:u_panel2:GAUGE:$hb:-1000:1000 \
-DS:i_panel2:GAUGE:$hb:-100:100 \
-DS:u_panel3:GAUGE:$hb:-1000:1000 \
-DS:i_panel3:GAUGE:$hb:-100:100 \
+DS:u_panel1:GAUGE:$hb:-10000:10000 \
+DS:i_panel1:GAUGE:$hb:-1000:1000 \
+DS:u_panel2:GAUGE:$hb:-10000:10000 \
+DS:i_panel2:GAUGE:$hb:-1000:1000 \
+DS:u_panel3:GAUGE:$hb:-10000:10000 \
+DS:i_panel3:GAUGE:$hb:-1000:1000 \
 DS:e_today:GAUGE:$hb:0:100000 \
-DS:u_grid:GAUGE:$hb:-1000:1000 \
-DS:i_grid:GAUGE:$hb:-100:100 \
+DS:u_grid:GAUGE:$hb:-10000:10000 \
+DS:i_grid:GAUGE:$hb:-1000:1000 \
 DS:freq:GAUGE:$hb:0:10000 \
 DS:e_now:GAUGE:$hb:0:10000 \
 DS:e_total:GAUGE:$hb:0:1000000 \

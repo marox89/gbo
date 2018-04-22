@@ -1,0 +1,10 @@
+[Unit]
+Description=Runs gen_graphs_year every year
+
+[Timer]
+# Time between running each consecutive time
+OnCalendar=*-01-01 03:00:00
+Unit=gen_graphs_year.service
+
+[Install]
+WantedBy=multi-user.target
